@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import API from "../../services/api.js"; //  use API service
-import { useCart } from "../../context/CartContext.jsx";
+import { useCart } from "../context/CartContext.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
