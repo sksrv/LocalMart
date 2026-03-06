@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
-import axios from "axios";
-import { useCart } from "../context/CartContext";
+import API from "../../services/api.js"; //  use API service
+import { useCart } from "../../context/CartContext.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -22,32 +22,21 @@ export default function SuccessPage() {
       if (paymentIntent.status === "succeeded") {
         setStatus("success");
 
-        //  Save order to database
         try {
-          const token = localStorage.getItem("token");
-          //  seller is populated object — extract just the _id string
+          //  Extract seller ID correctly from populated object
           const rawSeller = cart[0]?.product?.seller || cart[0]?.product?.store;
           const sellerId = typeof rawSeller === "object" ? rawSeller?._id : rawSeller;
 
-          //  Use token from user object in localStorage
-          const userObj = JSON.parse(localStorage.getItem("user"));
-          const authToken = userObj?.token;
+          await API.post("/orders", { // 
+            items: cart,
+            totalAmount: totalPrice,
+            paymentIntentId,
+            sellerId,
+          });
 
-          await axios.post(
-            "http://localhost:5000/api/orders",
-            {
-              items: cart,
-              totalAmount: totalPrice,
-              paymentIntentId,
-              sellerId,
-            },
-            { headers: { Authorization: `Bearer ${authToken}` } }
-          );
-
-          clearCart(); //  Clear cart after order saved
+          clearCart();
         } catch (err) {
           console.error("Order save error:", err);
-          // Don't change status — payment was still successful
         }
       } else if (paymentIntent.status === "processing") {
         setStatus("processing");
@@ -58,10 +47,10 @@ export default function SuccessPage() {
   }, [clientSecret]);
 
   const states = {
-    loading: { icon: "⏳", title: "Checking payment...", msg: "Please wait.", color: "text-gray-500" },
-    success: { icon: "✅", title: "Payment Successful!", msg: "Your order has been placed and saved.", color: "text-green-600" },
-    processing: { icon: "🔄", title: "Payment Processing", msg: "We'll confirm your order shortly.", color: "text-yellow-500" },
-    failed: { icon: "❌", title: "Payment Failed", msg: "Something went wrong. Please try again.", color: "text-red-500" },
+    loading:    { icon: "⏳", title: "Checking payment...",    msg: "Please wait.",                              color: "text-gray-500"  },
+    success:    { icon: "✅", title: "Payment Successful!",    msg: "Your order has been placed and saved.",      color: "text-green-600" },
+    processing: { icon: "🔄", title: "Payment Processing",     msg: "We'll confirm your order shortly.",          color: "text-yellow-500"},
+    failed:     { icon: "❌", title: "Payment Failed",         msg: "Something went wrong. Please try again.",    color: "text-red-500"   },
   };
 
   const current = states[status];
@@ -75,10 +64,7 @@ export default function SuccessPage() {
 
         <div className="flex flex-col gap-3">
           {status === "success" && (
-            <Link
-              to="/my-orders"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition"
-            >
+            <Link to="/my-orders" className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition">
               View My Orders
             </Link>
           )}

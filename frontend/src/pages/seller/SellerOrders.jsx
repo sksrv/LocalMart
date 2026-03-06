@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../../services/api.js"; 
 
 const statusColors = {
   confirmed: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -18,13 +18,7 @@ export default function SellerOrders() {
   const [updating, setUpdating] = useState(null);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = user?.token;
-
-    axios
-      .get("http://localhost:5000/api/orders/seller-orders", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    API.get("/orders/seller-orders") 
       .then((res) => { setOrders(res.data); setLoading(false); })
       .catch(() => { setError("Failed to load orders."); setLoading(false); });
   }, []);
@@ -32,15 +26,8 @@ export default function SellerOrders() {
   const updateStatus = async (orderId, status) => {
     setUpdating(orderId);
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.patch(
-        `http://localhost:5000/api/orders/${orderId}/status`,
-        { status },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setOrders((prev) =>
-        prev.map((o) => (o._id === orderId ? { ...o, status: res.data.status } : o))
-      );
+      const res = await API.patch(`/orders/${orderId}/status`, { status }); 
+      setOrders((prev) => prev.map((o) => o._id === orderId ? { ...o, status: res.data.status } : o));
     } catch {
       alert("Failed to update status.");
     } finally {
@@ -60,9 +47,7 @@ export default function SellerOrders() {
     </div>
   );
 
-  // Stats
   const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const delivered = orders.filter((o) => o.status === "delivered").length;
   const pending = orders.filter((o) => o.status === "confirmed" || o.status === "shipped").length;
 
   return (
@@ -93,23 +78,15 @@ export default function SellerOrders() {
       ) : (
         <div className="space-y-6">
           {orders.map((order) => (
-            <div
-              key={order._id}
-              className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6"
-            >
-              {/* Header */}
+            <div key={order._id} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6">
               <div className="flex justify-between items-start flex-wrap gap-2 mb-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Order ID</p>
                   <p className="text-sm font-mono text-gray-600 dark:text-gray-300">{order._id}</p>
                   <p className="text-xs text-gray-400 mt-2">
-                    {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                      day: "numeric", month: "short", year: "numeric",
-                    })}
+                    {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
                 </div>
-
-                {/* Status Dropdown */}
                 <div className="flex items-center gap-3">
                   <span className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${statusColors[order.status]}`}>
                     {order.status}
@@ -127,7 +104,6 @@ export default function SellerOrders() {
                 </div>
               </div>
 
-              {/* Buyer Info */}
               {order.buyer && (
                 <div className="mb-4 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm">
                   <p className="text-gray-500">Customer</p>
@@ -136,27 +112,20 @@ export default function SellerOrders() {
                 </div>
               )}
 
-              {/* Items */}
               <div className="space-y-3 mb-4">
                 {order.items.map((item, i) => (
                   <div key={i} className="flex items-center gap-4">
-                    <img
-                      src={item.product.image}
-                      alt={item.product.title}
-                      className="w-16 h-16 object-cover rounded-xl border border-gray-100 dark:border-gray-800"
-                    />
+                    <img src={item.product.imageURL || item.product.image} alt={item.product.title}
+                      className="w-16 h-16 object-cover rounded-xl border border-gray-100 dark:border-gray-800" />
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 dark:text-white">{item.product.title}</p>
                       <p className="text-sm text-gray-500">Qty: {item.quantity} × ₹{item.product.price}</p>
                     </div>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      ₹{item.quantity * item.product.price}
-                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">₹{item.quantity * item.product.price}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Total */}
               <div className="border-t border-gray-100 dark:border-gray-800 pt-3 flex justify-between">
                 <p className="text-gray-500 text-sm">Order Total</p>
                 <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">₹{order.totalAmount}</p>

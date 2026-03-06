@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../../services/api.js"; //  use API service
 import { Link } from "react-router-dom";
 
 const statusColors = {
@@ -16,12 +16,7 @@ export default function MyOrders() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = user?.token;
-    axios
-      .get("http://localhost:5000/api/orders/my-orders", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    API.get("/orders/my-orders") 
       .then((res) => { setOrders(res.data); setLoading(false); })
       .catch(() => { setError("Failed to load orders."); setLoading(false); });
   }, []);
@@ -55,11 +50,7 @@ export default function MyOrders() {
       ) : (
         <div className="space-y-6">
           {orders.map((order) => (
-            <div
-              key={order._id}
-              className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6"
-            >
-              {/* Order Header */}
+            <div key={order._id} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-6">
               <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Order ID</p>
@@ -70,34 +61,25 @@ export default function MyOrders() {
                     {order.status}
                   </span>
                   <p className="text-xs text-gray-400 mt-1">
-                    {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                      day: "numeric", month: "short", year: "numeric",
-                    })}
+                    {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
                 </div>
               </div>
 
-              {/* Items */}
               <div className="space-y-3 mb-4">
                 {order.items.map((item, i) => (
                   <div key={i} className="flex items-center gap-4">
-                    <img
-                      src={item.product.image}
-                      alt={item.product.title}
-                      className="w-16 h-16 object-cover rounded-xl border border-gray-100 dark:border-gray-800"
-                    />
+                    <img src={item.product.imageURL || item.product.image} alt={item.product.title}
+                      className="w-16 h-16 object-cover rounded-xl border border-gray-100 dark:border-gray-800" />
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 dark:text-white">{item.product.title}</p>
                       <p className="text-sm text-gray-500">Qty: {item.quantity} × ₹{item.product.price}</p>
                     </div>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      ₹{item.quantity * item.product.price}
-                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">₹{item.quantity * item.product.price}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Total */}
               <div className="border-t border-gray-100 dark:border-gray-800 pt-3 flex justify-between items-center">
                 <p className="text-gray-500 text-sm">Total Amount</p>
                 <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">₹{order.totalAmount}</p>
