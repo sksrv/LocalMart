@@ -13,8 +13,16 @@ dotenv.config();
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.CLIENT_URL,                    // local dev URL
+  "https://local-mart-gamma.vercel.app"     // deployed frontend URL
+];
+
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true, // allow cookies / auth headers
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
